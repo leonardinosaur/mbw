@@ -19,21 +19,18 @@ unpack: Unzip results from MagickBox processing
 status: Get count of processes of interest and count of
 	how many of those have finished processing
 
-help: Print help
+help: Print this help message
 
 
 Examples
 ========
 
 
-To-do
-=====
 
-Use argparse maybe
-mb pull
-queue and monitor functionality
-cant assume mb lives in home directory
 
+Written on 3 Nov by Dino
+Last Updated on 3 Nov by Dino
+	-Initial write
 
 """
 
@@ -44,9 +41,13 @@ import random
 import shutil
 from datetime import datetime
 
+home_dir = os.environ['HOME']
 mbp_dir = os.environ['MBPROJ_DIR']
 if mbp_dir.endswith('/'):
 	mbp_dir = mbp_dir[:-1]
+
+print home_dir
+print mbp_dir 
 
 def rand_id():
 	alpha_num = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
@@ -136,9 +137,13 @@ elif cmd == 'send':
 	proj_dir = get_proj_dir()
 	aet = sys.argv[2]
 
-	send_limit = 500
-	if len(sys.argv) > 3:
-		send_limit = float(sys.argv[3])
+	send_limit, add_tag  = 500, ''
+	if '-l' in sys.argv:
+		send_limit = float(sys.argv[sys.argv.index('-l')+1])
+
+	if '-t' in sys.argv:
+		add_tag = sys.argv[sys.argv.index('-t')+1]
+
 	in_dir = proj_dir + '/' + aet + '_inputs'
 
 	# Check if this stream has been added
@@ -148,7 +153,7 @@ elif cmd == 'send':
 
 	# Get path to inputs
 	all_inps = sorted(glob(in_dir + '/*/'))
-	num_sent = 0
+	num_sent, num_done = 0, 0
 	for inp in all_inps:
 		
 		# Check if we have surpassed the limit
@@ -161,10 +166,11 @@ elif cmd == 'send':
 		if os.path.exists(inp + '/progress.txt'):
 			print "Directory already sent for processing - skipping"
 			print ''
+			num_done += 1
 			continue
 		
 		# Set sender
-		cmd = '~/mb w mbw_sender_%s_%s' % (aet, inp.replace(in_dir, '').replace('/', ''))
+		cmd = '~/mb w mbw_sender_%s_%s' % (aet, inp.replace(in_dir, '').replace('/', '') + add_tag)
 		print cmd
 		os.system(cmd)
 		
@@ -182,8 +188,11 @@ elif cmd == 'send':
 		with open(stamp_fname, 'w') as w:
 			curr_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 			w.write('Sent to MagickBox stream %s at %s' % (aet, curr_time))
+	print "Number of directories sent: ", num_sent
+	print "Number of directories found already sent: ", num_done
 
-elif cmd == 'retrieve':
+
+elif cmd == 'pull':
 	sys.exit('Not yet implemented')
 	# Get list of files to pull
 
@@ -195,7 +204,6 @@ elif cmd == 'retrieve':
 
 elif cmd == 'unpack':
 	sys.exit('Not yet implemented')
-	# 
 	
 else:
 	print 'Command %s not recognized' % cmd
